@@ -89,13 +89,25 @@ class MainActivity : AppCompatActivity() {
 
     @OptIn(ExperimentalGetImage::class)
     private fun detectObjects(imageProxy: ImageProxy) {
+        val mediaImage = imageProxy.image
+        if (mediaImage == null) {
+            Log.e("ishaq Object Detection", "Media Image is null")
+            imageProxy.close()
+            return
+        }
+
+        val image = try {
+            InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+        } catch (e: Exception) {
+            Log.e("ishaq Object Detection", "Error creating InputImage: ${e.message}", e)
+            imageProxy.close()
+            return
+        }
+
         val localModel = LocalModel.Builder()
             .setAssetFilePath("detect_quant_metadata.tflite")
-            // or .setAbsoluteFilePath(absolute file path to model file)
-            // or .setUri(URI to model file)
             .build()
 
-        // Live detection and tracking
         val customObjectDetectorOptions =
             CustomObjectDetectorOptions.Builder(localModel)
                 .setDetectorMode(CustomObjectDetectorOptions.STREAM_MODE)
@@ -105,18 +117,15 @@ class MainActivity : AppCompatActivity() {
                 .enableClassification()
                 .build()
 
-        val objectDetector =
-            ObjectDetection.getClient(customObjectDetectorOptions)
-
-        val mediaImage = imageProxy.image ?: return
-        val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+        val objectDetector = ObjectDetection.getClient(customObjectDetectorOptions)
 
         objectDetector.process(image)
             .addOnSuccessListener { detectedObjects ->
-                Log.e("ishaq Object Detection", "${detectedObjects.size}")
+                Log.e("ishaq Object Detection", "Detected Objects: ${detectedObjects.size}")
                 for (detectedObject in detectedObjects) {
+                    Log.e("ishaq Object Detection", "Detected Object: ${detectedObject.boundingBox}")
                     for (label in detectedObject.labels) {
-                        Log.e("ishaq Object Detection", "${label.text}")
+                        Log.e("ishaq Object Detection", "Label: ${label.text}")
                         if (label.text == "card" && detectedObject.boundingBox.intersect(Rect(50, 50, 300, 150))) {
                             // Capture, crop, and display the image
                             captureAndDisplay(detectedObject.boundingBox, image)
@@ -127,7 +136,7 @@ class MainActivity : AppCompatActivity() {
                 imageProxy.close()
             }
             .addOnFailureListener { e ->
-                Log.e("ishaq Object Detection", "Error detecting objects", e)
+                Log.e("ishaq Object Detection", "Error detecting objects: ${e.message}", e)
                 imageProxy.close()
             }
     }
