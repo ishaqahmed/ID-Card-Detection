@@ -24,13 +24,13 @@ import com.google.mlkit.vision.objects.ObjectDetection
 import com.google.mlkit.vision.objects.custom.CustomObjectDetectorOptions
 import java.util.concurrent.Executors
 
-class MainActivity : AppCompatActivity() {
+class MLKitActivity : AppCompatActivity() {
 
     private val executor = Executors.newSingleThreadExecutor()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_mlkit)
 
         if (ContextCompat.checkSelfPermission(
                 this,
