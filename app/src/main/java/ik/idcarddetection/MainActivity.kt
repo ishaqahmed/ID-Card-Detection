@@ -105,7 +105,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         val localModel = LocalModel.Builder()
-            .setAssetFilePath("detect_quant_metadata.tflite")
+            .setAssetFilePath("object_labeler.tflite")
             .build()
 
         val customObjectDetectorOptions =
