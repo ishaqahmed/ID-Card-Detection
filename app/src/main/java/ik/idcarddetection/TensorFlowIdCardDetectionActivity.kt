@@ -5,9 +5,12 @@ import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.graphics.RectF
 import android.os.Bundle
 import android.util.Log
+import android.view.View
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -41,6 +44,7 @@ class TensorFlowIdCardDetectionActivity : AppCompatActivity(), ObjectDetectorHel
     private lateinit var viewFinder: PreviewView
     private lateinit var overlay: OverlayView
     private lateinit var croppedImageView: ImageView
+    private lateinit var btnRestart: Button
     private var boundaryRect = RectF()
 
     /** Blocking camera operations are performed using this executor */
@@ -87,6 +91,14 @@ class TensorFlowIdCardDetectionActivity : AppCompatActivity(), ObjectDetectorHel
         viewFinder = findViewById(R.id.viewFinder)
         overlay = findViewById(R.id.overlay)
         croppedImageView = findViewById(R.id.croppedImageView)
+        btnRestart = findViewById(R.id.btnRestart)
+        viewFinder.visibility = View.VISIBLE
+        overlay.visibility = View.VISIBLE
+        croppedImageView.visibility = View.GONE
+        btnRestart.visibility = View.GONE
+        btnRestart.setOnClickListener(View.OnClickListener {
+            init()
+        })
 
         boundaryRect = resources.let { RectF(it.getDimension(com.intuit.sdp.R.dimen._15sdp),
             it.getDimension(com.intuit.sdp.R.dimen._200sdp),
@@ -195,6 +207,7 @@ class TensorFlowIdCardDetectionActivity : AppCompatActivity(), ObjectDetectorHel
     // Update UI after objects have been detected. Extracts original image height/width
     // to scale and place bounding boxes properly through OverlayView
     override fun onResults(
+        imageRotation: Int,
         results: MutableList<Detection>?,
         inferenceTime: Long,
         imageHeight: Int,
@@ -221,9 +234,13 @@ class TensorFlowIdCardDetectionActivity : AppCompatActivity(), ObjectDetectorHel
                 val left = boundingBox.left * scaleFactor
                 val right = boundingBox.right * scaleFactor
                 val drawableRect = RectF(left, top, right, bottom)
-                if (isWithinBoundary(drawableRect)) {
+                if (isWithinBoundary(drawableRect)
+                    && detection.categories[0].label.equals("card")
+                    && String.format("%.2f", detection.categories[0].score).toDouble() == 1.00) {
+                    // Rotate the bitmapBuffer to correct the orientation
+                    val rotatedBitmap = rotateBitmap(bitmapBuffer, imageRotation.toFloat())
                     // Capture and crop image based on bounding box coordinates
-                    val croppedImage = cropImage(bitmapBuffer, boundingBox)
+                    val croppedImage = cropImage(rotatedBitmap, boundingBox)
                     // Display cropped image for user verification
                     displayCroppedImage(croppedImage)
                 }
@@ -244,6 +261,12 @@ class TensorFlowIdCardDetectionActivity : AppCompatActivity(), ObjectDetectorHel
                 boundingBox.bottom <= boundaryRect.bottom
     }
 
+    private fun rotateBitmap(source: Bitmap, angle: Float): Bitmap {
+        val matrix = Matrix()
+        matrix.postRotate(angle)
+        return Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix, true)
+    }
+
     private fun cropImage(image: Bitmap, boundingBox: RectF): Bitmap {
         return Bitmap.createBitmap(
             image,
@@ -257,7 +280,12 @@ class TensorFlowIdCardDetectionActivity : AppCompatActivity(), ObjectDetectorHel
     private fun displayCroppedImage(croppedImage: Bitmap) {
         // Implement logic to display cropped image for user verification
         runOnUiThread {
-            Toast.makeText(this, "yes", Toast.LENGTH_SHORT).show()
+            cameraExecutor.shutdown()
+            overlay.clear()
+            viewFinder.visibility = View.GONE
+            overlay.visibility = View.GONE
+            croppedImageView.visibility = View.VISIBLE
+            btnRestart.visibility = View.VISIBLE
             croppedImageView.setImageBitmap(croppedImage)
         }
     }
