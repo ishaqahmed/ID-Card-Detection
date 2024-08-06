@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.graphics.RectF
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -24,6 +25,7 @@ import org.tensorflow.lite.task.vision.detector.Detection
 import java.util.LinkedList
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.math.max
 
 class TensorFlowIdCardDetectionActivity : AppCompatActivity(), ObjectDetectorHelper.DetectorListener {
 
@@ -37,6 +39,7 @@ class TensorFlowIdCardDetectionActivity : AppCompatActivity(), ObjectDetectorHel
     private var cameraProvider: ProcessCameraProvider? = null
     private lateinit var viewFinder: PreviewView
     private lateinit var overlay: OverlayView
+    private var boundaryRect = RectF()
 
     /** Blocking camera operations are performed using this executor */
     private lateinit var cameraExecutor: ExecutorService
@@ -81,6 +84,11 @@ class TensorFlowIdCardDetectionActivity : AppCompatActivity(), ObjectDetectorHel
     private fun init() {
         viewFinder = findViewById(R.id.viewFinder)
         overlay = findViewById(R.id.overlay)
+
+        boundaryRect = resources.let { RectF(it.getDimension(com.intuit.sdp.R.dimen._15sdp),
+            it.getDimension(com.intuit.sdp.R.dimen._200sdp),
+            it.getDimension(com.intuit.sdp.R.dimen._300sdp),
+            it.getDimension(com.intuit.sdp.R.dimen._400sdp)) }
 
         objectDetectorHelper = ObjectDetectorHelper(
             context = this,
@@ -195,17 +203,58 @@ class TensorFlowIdCardDetectionActivity : AppCompatActivity(), ObjectDetectorHel
             overlay.setResults(
                 results ?: LinkedList<Detection>(),
                 imageHeight,
-                imageWidth
+                imageWidth,
+                boundaryRect,
             )
 
             // Force a redraw
             overlay.invalidate()
+
+            results?.forEach { detection ->
+                val boundingBox = detection.boundingBox
+                var scaleFactor = max(overlay.width * 1f / imageWidth, overlay.height * 1f / imageHeight)
+                val top = boundingBox.top * scaleFactor
+                val bottom = boundingBox.bottom * scaleFactor
+                val left = boundingBox.left * scaleFactor
+                val right = boundingBox.right * scaleFactor
+                val drawableRect = RectF(left, top, right, bottom)
+                if (isWithinBoundary(drawableRect)) {
+                    // Capture and crop image based on bounding box coordinates
+                    val croppedImage = cropImage(bitmapBuffer, boundingBox)
+                    // Display cropped image for user verification
+                    displayCroppedImage(croppedImage)
+                }
+            }
         }
     }
 
     override fun onError(error: String) {
         runOnUiThread {
             Toast.makeText(this, error, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun isWithinBoundary(boundingBox: RectF): Boolean {
+        return boundingBox.left >= boundaryRect.left &&
+                boundingBox.top >= boundaryRect.top &&
+                boundingBox.right <= boundaryRect.right &&
+                boundingBox.bottom <= boundaryRect.bottom
+    }
+
+    private fun cropImage(image: Bitmap, boundingBox: RectF): Bitmap {
+        return Bitmap.createBitmap(
+            image,
+            boundingBox.left.toInt(),
+            boundingBox.top.toInt(),
+            boundingBox.width().toInt(),
+            boundingBox.height().toInt()
+        )
+    }
+
+    private fun displayCroppedImage(croppedImage: Bitmap) {
+        // Implement logic to display cropped image for user verification
+        runOnUiThread {
+            Toast.makeText(this, "yes", Toast.LENGTH_SHORT).show()
         }
     }
 }

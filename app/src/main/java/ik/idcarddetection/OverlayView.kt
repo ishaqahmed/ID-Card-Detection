@@ -15,6 +15,15 @@ import org.tensorflow.lite.task.vision.detector.Detection
 
 class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs) {
 
+    // Add boundary rectangle
+    private var boundaryRect = RectF()
+    // Add paint for boundary rectangle
+    private val boundaryPaint = Paint().apply {
+        color = Color.GREEN
+        strokeWidth = 5f
+        style = Paint.Style.STROKE
+    }
+
     private var results: List<Detection> = LinkedList<Detection>()
     private var boxPaint = Paint()
     private var textBackgroundPaint = Paint()
@@ -52,6 +61,9 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
 
     override fun draw(canvas: Canvas) {
         super.draw(canvas)
+
+        // Draw boundary rectangle
+        canvas.drawRect(boundaryRect, boundaryPaint)
 
         for (result in results) {
             val boundingBox = result.boundingBox
@@ -91,7 +103,9 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
       detectionResults: MutableList<Detection>,
       imageHeight: Int,
       imageWidth: Int,
+      boundaryRect: RectF,
     ) {
+        this.boundaryRect = boundaryRect
         results = detectionResults
 
         // PreviewView is in FILL_START mode. So we need to scale up the bounding box to match with
