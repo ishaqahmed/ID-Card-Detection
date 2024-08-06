@@ -22,6 +22,14 @@
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.IDCardDetection">
+
+        </activity>
+
+        <activity
+            android:name=".TensorFlowIdCardDetectionActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.IDCardDetection">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
