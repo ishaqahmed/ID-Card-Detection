@@ -8,6 +8,7 @@ import android.graphics.Bitmap
 import android.graphics.RectF
 import android.os.Bundle
 import android.util.Log
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -39,6 +40,7 @@ class TensorFlowIdCardDetectionActivity : AppCompatActivity(), ObjectDetectorHel
     private var cameraProvider: ProcessCameraProvider? = null
     private lateinit var viewFinder: PreviewView
     private lateinit var overlay: OverlayView
+    private lateinit var croppedImageView: ImageView
     private var boundaryRect = RectF()
 
     /** Blocking camera operations are performed using this executor */
@@ -84,6 +86,7 @@ class TensorFlowIdCardDetectionActivity : AppCompatActivity(), ObjectDetectorHel
     private fun init() {
         viewFinder = findViewById(R.id.viewFinder)
         overlay = findViewById(R.id.overlay)
+        croppedImageView = findViewById(R.id.croppedImageView)
 
         boundaryRect = resources.let { RectF(it.getDimension(com.intuit.sdp.R.dimen._15sdp),
             it.getDimension(com.intuit.sdp.R.dimen._200sdp),
@@ -212,7 +215,7 @@ class TensorFlowIdCardDetectionActivity : AppCompatActivity(), ObjectDetectorHel
 
             results?.forEach { detection ->
                 val boundingBox = detection.boundingBox
-                var scaleFactor = max(overlay.width * 1f / imageWidth, overlay.height * 1f / imageHeight)
+                val scaleFactor = max(overlay.width * 1f / imageWidth, overlay.height * 1f / imageHeight)
                 val top = boundingBox.top * scaleFactor
                 val bottom = boundingBox.bottom * scaleFactor
                 val left = boundingBox.left * scaleFactor
@@ -255,6 +258,7 @@ class TensorFlowIdCardDetectionActivity : AppCompatActivity(), ObjectDetectorHel
         // Implement logic to display cropped image for user verification
         runOnUiThread {
             Toast.makeText(this, "yes", Toast.LENGTH_SHORT).show()
+            croppedImageView.setImageBitmap(croppedImage)
         }
     }
 }
