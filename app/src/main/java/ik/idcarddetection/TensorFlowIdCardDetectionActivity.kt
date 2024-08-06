@@ -22,6 +22,7 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
+import androidx.camera.core.TorchState
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
@@ -45,6 +46,7 @@ class TensorFlowIdCardDetectionActivity : AppCompatActivity(), ObjectDetectorHel
     private lateinit var overlay: OverlayView
     private lateinit var croppedImageView: ImageView
     private lateinit var btnRestart: Button
+    private lateinit var btnFlash: Button
     private var boundaryRect = RectF()
 
     /** Blocking camera operations are performed using this executor */
@@ -92,12 +94,17 @@ class TensorFlowIdCardDetectionActivity : AppCompatActivity(), ObjectDetectorHel
         overlay = findViewById(R.id.overlay)
         croppedImageView = findViewById(R.id.croppedImageView)
         btnRestart = findViewById(R.id.btnRestart)
+        btnFlash = findViewById(R.id.btnFlash)
         viewFinder.visibility = View.VISIBLE
         overlay.visibility = View.VISIBLE
+        btnFlash.visibility = View.VISIBLE
         croppedImageView.visibility = View.GONE
         btnRestart.visibility = View.GONE
-        btnRestart.setOnClickListener(View.OnClickListener {
+        btnRestart.setOnClickListener({
             init()
+        })
+        btnFlash.setOnClickListener({
+            toggleFlash()
         })
 
         boundaryRect = resources.let { RectF(it.getDimension(com.intuit.sdp.R.dimen._15sdp),
@@ -188,6 +195,16 @@ class TensorFlowIdCardDetectionActivity : AppCompatActivity(), ObjectDetectorHel
         } catch (exc: Exception) {
             Log.e(tag, "Use case binding failed", exc)
         }
+    }
+
+    private fun toggleFlash() {
+        val newFlashMode = if (camera?.cameraInfo?.torchState?.value == TorchState.ON) {
+            TorchState.OFF
+        } else {
+            TorchState.ON
+        }
+
+        camera?.cameraControl?.enableTorch(newFlashMode == TorchState.ON)
     }
 
     private fun detectObjects(image: ImageProxy) {
@@ -284,6 +301,7 @@ class TensorFlowIdCardDetectionActivity : AppCompatActivity(), ObjectDetectorHel
             overlay.clear()
             viewFinder.visibility = View.GONE
             overlay.visibility = View.GONE
+            btnFlash.visibility = View.GONE
             croppedImageView.visibility = View.VISIBLE
             btnRestart.visibility = View.VISIBLE
             croppedImageView.setImageBitmap(croppedImage)
