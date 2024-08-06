@@ -12,6 +12,7 @@ import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -47,6 +48,7 @@ class TensorFlowIdCardDetectionActivity : AppCompatActivity(), ObjectDetectorHel
     private lateinit var croppedImageView: ImageView
     private lateinit var btnRestart: Button
     private lateinit var btnFlash: Button
+    private lateinit var tvInstruction: TextView
     private var boundaryRect = RectF()
 
     /** Blocking camera operations are performed using this executor */
@@ -95,9 +97,11 @@ class TensorFlowIdCardDetectionActivity : AppCompatActivity(), ObjectDetectorHel
         croppedImageView = findViewById(R.id.croppedImageView)
         btnRestart = findViewById(R.id.btnRestart)
         btnFlash = findViewById(R.id.btnFlash)
+        tvInstruction = findViewById(R.id.tvInstruction)
         viewFinder.visibility = View.VISIBLE
         overlay.visibility = View.VISIBLE
         btnFlash.visibility = View.VISIBLE
+        tvInstruction.visibility = View.VISIBLE
         croppedImageView.visibility = View.GONE
         btnRestart.visibility = View.GONE
         btnRestart.setOnClickListener({
@@ -302,6 +306,7 @@ class TensorFlowIdCardDetectionActivity : AppCompatActivity(), ObjectDetectorHel
             viewFinder.visibility = View.GONE
             overlay.visibility = View.GONE
             btnFlash.visibility = View.GONE
+            tvInstruction.visibility = View.GONE
             croppedImageView.visibility = View.VISIBLE
             btnRestart.visibility = View.VISIBLE
             croppedImageView.setImageBitmap(croppedImage)
